@@ -1,10 +1,31 @@
 ![Phaser 2.0](http://www.phaser.io/images/phaser2-github.png)
 
-# Phaser 2.1.0-dev
+# Index
+
+- [About](#about)
+- [What's New?](#whats-new)
+- [Getting Started](#getting-started)
+- [Change Log](#change-log)
+- [How to Build](#how-to-build)
+- [Koding](#koding)
+- [Bower / NPM](#bower)
+- [CDNJS](#cdnjs)
+- [Requirements](#requirements)
+- [Build Files](#build-files)
+- [Learn By Example](#example)
+- [Features](#features)
+- [Road Map](#road-map)
+- [Mighty Editor](#mighty-editor)
+- [Contributing](#contributing)
+- [Bugs?](#bugs)
+- [License](#license)
+
+<a name="about"></a>
+# Phaser 2.1.2
 
 Phaser is a fast, free and fun open source game framework for making desktop and mobile browser HTML5 games. It uses [Pixi.js](https://github.com/GoodBoyDigital/pixi.js/) internally for fast 2D Canvas and WebGL rendering.
 
-Version: 2.1.0 "Cairhien" - Released: -in development-
+Version: 2.1.2 "Whitebridge" - Released: in development
 
 By Richard Davey, [Photon Storm](http://www.photonstorm.com)
 
@@ -21,7 +42,8 @@ By Richard Davey, [Photon Storm](http://www.photonstorm.com)
 
 ![div](http://phaser.io/images/div4.png)
 
-## Welcome to Phaser and What's new in 2.1.0?
+<a name="whats-new"></a>
+## Welcome to Phaser and What's new in 2.1.2?
 
 Until then happy coding everyone! And we hope to see you on the forums.
 
@@ -29,6 +51,7 @@ Until then happy coding everyone! And we hope to see you on the forums.
 
 ![div](http://phaser.io/images/div1.png)
 
+<a name="getting-started"></a>
 ## Getting Started Guides
 
 We have a [Getting Started Guide](http://phaser.io/getting-started-js.php) which covers all you need to begin developing games with Phaser. From setting up a web server to picking an IDE. If you're new to HTML5 game development, or are coming from another language like AS3, then we recommend starting there.
@@ -43,27 +66,53 @@ Finally the list of [community authored Phaser Tutorials](http://www.lessmilk.co
 
 ![div](http://phaser.io/images/div2.png)
 
+<a name="change-log"></a>
 ## Change Log
 
-Version 2.1.0 - "Cairhien" - -in development-
+Version 2.1.2 - "Whitebridge" - in development
 
-### Updates
 
 
 ### New Features
 
+* StateManager.unlink will null all State-level Phaser properties, such as `game`, `add`, etc. Useful if you never need to return to the State again.
+* Cache.removeImage has a new parameter: `removeFromPixi` which is `true` by default. It will remove the image from the Pixi BaseTextureCache as well as from the Phaser Cache. Set to false if you don't want the Pixi cache touched.
+* Group.ignoreDestroy boolean will bail out early from any call to `Group.destroy`. Handy if you need to create a global Group that persists across States.
+* Loader can now natively load XML files via `load.xml`. Once the XML file has loaded it is parsed via either DOMParser or ActiveXObject and then added to the Cache, where it can be retrieved via `cache.getXML(key)`.
+* Cache now has support for XML files stored in their own container. You can add them with `cache.addXML` (typically this is done from the Loader automatically for you) and get them with `cache.getXML(key)`. There is also `cache.checkXMLKey(key)`, `cache.checkKeys` and `cache.removeXML(key)`.
+* Rectangle.aabb is a new method that will take an array of Points and return a Rectangle that matches the AABB (bounding area) of the Points (thanks @codevinsky #1199)
+* AudioSprite support is now built into the Loader and SoundManager. AudioSprites are like sprite sheets, only they consist of a selection of audio files and markers in a json configuration. You can find more details at https://github.com/tonistiigi/audiosprite (thanks @codevinsky #1205)
+* Point.parse will return a new Point object based on the x and y properties of the object given to Point.parse (thanks @codevinsky #1198)
+* Sound.fadeOut(duration) will fade the Sound to a volume of zero over the duration given. At the end of the fade the Sound will be stopped and Sound.onFadeComplete dispatched.
+* Sound.fadeIn(duration, loop) will start the Sound playing, or restart it if already playing, set its volume to zero and then increase the volume over the duration given until it reaches 1. At the end of the fade the Sound.onFadeComplete event is dispatched.
+* Text.addColor allows you to set specific colors within the Text. It works by taking a color value, which is a typical HTML string such as `#ff0000` or `rgb(255,0,0)` and a position. The position value is the index of the character in the Text string to start applying this color to. Once set the color remains in use until either another color or the end of the string is encountered. For example if the Text was `Photon Storm` and you did `Text.addColor('#ffff00', 6)` it would color in the word `Storm` in yellow.
+* Text.clearColors resets any previously set colors from `Text.addColor`.
+
+
+
+### Updates
+
+* TypeScript definitions fixes and updates (thanks @clark-stevenson @englercj @benjamindulau)
+* Added the `sourceRect` and `maskRect` parameters back into `BitmapData.alphaMask` as they were accidentally removed in 2.1 (thanks seejay92)
+* jsdoc fixes (thanks @danxexe #1209)
+* AnimationParser is now using `value` instead of `nodeValue` when parsing atlas XML files, avoiding Chrome deprecation warnings (thanks @valtterip #1189)
+
+
 
 ### Bug Fixes
 
+* If Game Objects change their frame, such as with an animated Sprite, and the change goes from a previously trimmed frame to a non-trimmed (full size) one, then the previous trim values were still left active, causing it to glitch (thanks stupot)
+* If you called StateManager.start from within a states `init` method which also had a `preload` method it would fail to start the next State.
+* StateManager.boot would call start on a State twice if it was added to the game and started before the DOM load had completed. This didn't cause an error but was duplicating function calls needlessly.
+* Changing any of the Text properties such as font, lineSpacing and fontSize on a Text object that wasn't already on the display list would cause an updateTransform error. Parent is now checked first in all setters.
+* A Timer with a delay value that was a float and not an integer would not loop correctly. Timer delay values are now passed through Math.round to avoid this (thanks @osmanzeki #1196)
 
-### Migration Guide
 
-There is an extensive [Migration Guide](https://github.com/photonstorm/phaser/blob/master/resources/Migration%20Guide.md) available for those converting from Phaser 1.x to 2.x. In the guide we detail the API breaking changes and approach to our new physics system.
-
-The full Change Log is at https://github.com/photonstorm/phaser/blob/master/CHANGELOG.md
+For details about changes made in previous versions of Phaser see the full Change Log at https://github.com/photonstorm/phaser/blob/master/CHANGELOG.md
 
 ![div](http://phaser.io/images/div3.png)
 
+<a name="how-to-build"></a>
 ## How to Build
 
 We provide a fully compiled version of Phaser in the `build` folder, in both plain and minified formats.
@@ -80,17 +129,23 @@ Note: Some of you may not be aware, but the `phaser.min.js` file in the build fo
 
 ![div](http://phaser.io/images/div4.png)
 
+<a name="koding"></a>
 ## Koding
 
 You can [clone the Phaser repo in Koding](https://koding.com/Teamwork?import=https://github.com/photonstorm/phaser/archive/master.zip&c=git1) and then start editing and previewing code right away using their web based VM development system.
 
 ![div](http://phaser.io/images/div5.png)
 
-## Bower
+<a name="bower"></a>
+## Bower / NPM
 
 If you use bower you can install phaser with:
 
-`bower install phaser-official`
+`bower install phaser`
+
+If you use NPM you can install phaser with:
+
+`npm install phaser`
 
 Nice and easy :)
 
@@ -98,18 +153,20 @@ Nice and easy :)
 
 ![div](http://phaser.io/images/div6.png)
 
+<a name="cdnjs"></a>
 ## CDNJS
 
 Phaser is now available on [CDNJS](http://cdnjs.com). You can include the following in your html:
 
-`http://cdnjs.cloudflare.com/ajax/libs/phaser/2.1.0/phaser.min.js`
+`http://cdnjs.cloudflare.com/ajax/libs/phaser/2.1.2/phaser.min.js`
 
 Or if you prefer you can leave the protocol off, so it works via http and https:
 
-`//cdnjs.cloudflare.com/ajax/libs/phaser/2.1.0/phaser.min.js`
+`//cdnjs.cloudflare.com/ajax/libs/phaser/2.1.2/phaser.min.js`
 
 ![div](http://phaser.io/images/div1.png)
 
+<a name="requirements"></a>
 ## Requirements
 
 Games created with Phaser require a modern web browser that supports the canvas tag. This includes Internet Explorer 9+, Firefox, Chrome, Safari and Opera. It also works on mobile web browsers including stock Android 2.x browser and above and iOS5 Mobile Safari and above. But as always be aware of browser limitations. Not all features of Phaser work on all browsers.
@@ -122,14 +179,24 @@ If you need to support IE9 or Android 2.x and want to use P2 physics then you mu
 
 Phaser is developed in JavaScript. We've made no assumptions about how you like to code your games, and were careful not to impose any form of class / inheritance / structure upon you. So you won't find it split into require modules or pull in 3rd party npm packages for example. That doesn't mean you can't, it just means we don't force you to do so. If you're a requireJS user you'll find a new template in the `resources\Project Templates` folder just for you.
 
-If you code with [TypeScript](https://typescript.codeplex.com/) you'll find a comprehensive definitions file inside the `build` folder and tutorials on getting started.
+If you code with [TypeScript](http://www.typescriptlang.org/) you'll find a comprehensive definitions file inside the `build` folder and tutorials on getting started.
 
-Phaser is 128 KB gzipped (576 KB minified) when including all 3 physics engines. Without the physics engines its 67 KB gzipped (311 KB minified)
+<a name="build-files"></a>
+### Build Files and Custom Builds
 
-Note: The `phaser.min.js` file in the build folder contains all 3 physics systems bundled in. If you only need Arcade Physics then you can use `build\custom\phaser-arcade-physics.min.js` instead. This will save you 180 KB from the minified file size.
+The `build` folder contains the pre-built packaged versions of Phaser.
+
+Phaser is 143 KB gzipped (675 KB minified) when including *both* Arcade Physics and the full P2 Physics engine.
+
+If you don't require P2 you can save yourself nearly 200 KB from the minified size and instead use the `phaser-arcade-physics.min.js` file found inside the `build/custom` folder. This version is only 109 KB gzipped (504 KB minified).
+
+If you don't need any physics system at all, or are implementing your own, there is an even smaller build: `phaser-no-physics.min.js` in the `custom` folder that is only 95 KB gzipped (443 KB minified). Please note that this build doesn't include Tilemaps or Particle Emitter support either, as both rely on Arcade Physics.
+
+You can create your own custom build of Phaser by looking at the grunt options and manifests in the tasks folder.
 
 ![div](http://phaser.io/images/div3.png)
 
+<a name="example"></a>
 ## Learn By Example
 
 Ever since we started Phaser we've been growing and expanding our extensive set of Examples. Currently over 320 of them!
@@ -154,6 +221,7 @@ You can also browse all [Phaser Examples](http://examples.phaser.io) online.
 
 ![div](http://phaser.io/images/div4.png)
 
+<a name="features"></a>
 ## Features
 
 **WebGL &amp; Canvas**
@@ -225,55 +293,54 @@ Phaser has been used to create hundreds of games, which receive millions of play
 
 ![div](http://phaser.io/images/div6.png)
 
+<a name="road-map"></a>
 ## Road Map
 
 Here are some of the features planned for future releases:
 
 ### Version 2.2 ("Tarabon")
 
+* Look at HiDPI Canvas settings.
+* Enhance the State Management, so you can perform non-destructive State swaps and persistence.
+* Scene Manager - json scene parser.
 * Adjust how Pointers and Interactive Objects work. Allow an IO to be flagged as "on click only", so it doesn't ever get processed during normal Pointer move events (unless being dragged)
 * Allow multiple drag items - no longer bind just 1 to a Pointer
 * Allow Groups to have Priority IDs too and input disable entire Groups and all children (let it flow down the chain)
 * Allow Groups to be InputEnabled? Dragging a Group would be really useful.
-* Scene Manager - json scene parser.
-* Comprehensive testing across Firefox OS devices, CocoonJS and Ejecta.
 * Ability to control DOM elements from the core game and layer them into the game.
 * Touch Gestures.
 * Optimised global Animation manager to cut down on object creation.
 * Swapping to using a RenderTexture for the Tilemaps and implementing Tilemap slicing.
-* Enhance the State Management, so you can perform non-destructive State swaps and persistence.
-* Support for parallel asset loading.
 
-### Version 2.3 ("Illian")
+### Version 2.3 ("Illian") and Beyond
 
 * Look carefully at the internal structure of Phaser to avoid method repetition (such as Sprite.crop and Image.crop), investigate using mixins to help reduce overall codebase size.
 * Flash CC HTML5 export integration.
 * Massively enhance the audio side of Phaser. Take more advantage of Web Audio: echo effects, positional sound, etc.
-
-### Beyond version 2.3
-
-* A more advanced Particle system, one that can render to a single canvas (rather than spawn hundreds of Sprites), more advanced effects, etc.
+* Comprehensive testing across Firefox OS devices, CocoonJS and Ejecta.
+* Support for parallel asset loading.
+* DragonBones support.
 * Integration with third party services like Google Play Game Services and Amazon JS SDK.
 * Test out packaging with Node-webkit.
 * Game parameters stored in Google Docs.
-* Look at HiDPI Canvas settings.
 * Multiple Camera support.
-* DragonBones support.
 * Cache to localStorage using If-Modified-Since. [See github request](https://github.com/photonstorm/phaser/issues/495)
 * Allow for complex assets like Bitmap Fonts to be stored within a texture atlas.
 
+### Phaser 3
+
+Phaser 3 has entered the planning stages. Development will not begin until early 2015, but we are already asking for suggestions and feedback in [this forum thread](http://www.html5gamedevs.com/topic/7949-the-phaser-3-wishlist-thread/). We are currently experimenting with a fully ES6 based module system and we're keen for Phaser 3 to use as many native ES6 features as possible and where sensible. It will be a significant refactoring of the code base, but not at the expense of features or ease-of-use.
+
 ![div](http://phaser.io/images/div1.png)
 
-## MightyEditor - A Visual Phaser Game Editor
+<a name="mighty-editor"></a>
+## Mighty Editor - A Visual Phaser Game Editor
 
 [MightyEditor](http://mightyfingers.com/) is a browser-based visual Phaser game editor. Create your maps with ease, position objects and share them in seconds. It also exports to native Phaser code. Excellent for quickly setting-up levels and scenes.
 
-## Nadion
-
-[Nadion](https://github.com/jcd-as/nadion) is a set of powerful enhancements for Phaser that makes level building even easier. It includes features such as Trigger, Area, Alarms and Emitters, debug panels, state machines, parallax layer scrolling, 'developer mode' short-cuts and more.
-
 ![div](http://phaser.io/images/div2.png)
 
+<a name="contributing"></a>
 ## Contributing
 
 We now have a full [Contributors Guide][contribute] which goes into the process in more detail, but here are the headlines:
@@ -290,6 +357,7 @@ We now have a full [Contributors Guide][contribute] which goes into the process 
 
 ![div](http://phaser.io/images/div3.png)
 
+<a name="bugs"></a>
 ## Bugs?
 
 Please add them to the [Issue Tracker][issues] with as much info as possible, especially source code demonstrating the issue.
@@ -300,6 +368,7 @@ Please add them to the [Issue Tracker][issues] with as much info as possible, es
 
 ![div](http://phaser.io/images/div4.png)
 
+<a name="license"></a>
 ## License
 
 Phaser is released under the [MIT License](http://opensource.org/licenses/MIT).
