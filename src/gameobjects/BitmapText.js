@@ -27,6 +27,8 @@
 * For most use cases it is recommended to use XML. If you wish to use JSON, the formatting should be equal to the result of
 * converting a valid XML file through the popular X2JS library. An online tool for conversion can be found here: http://codebeautify.org/xmltojson
 *
+* If you were using an older version of Phaser (< 2.4) and using the DOMish parser hack, please remove this. It isn't required any longer.
+*
 * @class Phaser.BitmapText
 * @constructor
 * @extends PIXI.DisplayObjectContainer
@@ -142,6 +144,8 @@ Phaser.BitmapText = function (game, x, y, font, text, size, align) {
     * @private
     */
     this._tint = 0xFFFFFF;
+
+    this._text = this.cleanText(text);
 
     this.updateText();
 
@@ -301,6 +305,55 @@ Phaser.BitmapText.prototype.scanLine = function (data, scale, text) {
 };
 
 /**
+* Given a text string this will scan each character in the string to ensure it exists
+* in the BitmapText font data. If it doesn't the character is removed, or replaced with the `replace` argument.
+*
+* If no font data has been loaded at all this returns an empty string, as nothing can be rendered.
+* 
+* @method Phaser.BitmapText.prototype.cleanText
+* @param {string} text - The text to parse.
+* @param {string} [replace=''] - The replacement string for any missing characters.
+* @return {string} The cleaned text string.
+*/
+Phaser.BitmapText.prototype.cleanText = function (text, replace) {
+
+    if (replace === undefined)
+    {
+        replace = '';
+    }
+
+    var data = this._data.font;
+
+    if (!data)
+    {
+        return '';
+    }
+
+    var output = '';
+
+    for (var i = 0; i < text.length; i++)
+    {
+        if (!/(?:\r\n|\r|\n)/.test(text.charAt(i)))
+        {
+            var charCode = text.charCodeAt(i);
+            var charData = data.chars[charCode];
+
+            if (charData)
+            {
+                output = output.concat(text[i]);
+            }
+            else
+            {
+                output = output.concat(' ');
+            }
+        }
+    }
+
+    return output;
+
+};
+
+/**
 * Renders text and updates it when needed.
 *
 * @method Phaser.BitmapText.prototype.updateText
@@ -373,8 +426,6 @@ Phaser.BitmapText.prototype.updateText = function () {
             {
                 //  Sprite already exists in the glyphs pool, so we'll reuse it for this letter
                 g.texture = charData.texture;
-                // g.name = line.text[c];
-                // console.log('reusing', g.name, 'as', line.text[c]);
             }
             else
             {
@@ -382,7 +433,6 @@ Phaser.BitmapText.prototype.updateText = function () {
                 g = new PIXI.Sprite(charData.texture);
                 g.name = line.text[c];
                 this._glyphs.push(g);
-                // console.log('new', line.text[c]);
             }
 
             g.position.x = (line.chars[c] + align) - ax;
@@ -390,6 +440,7 @@ Phaser.BitmapText.prototype.updateText = function () {
 
             g.scale.set(scale);
             g.tint = this.tint;
+            g.texture.requiresReTint = true;
 
             if (!g.parent)
             {
@@ -526,6 +577,7 @@ Object.defineProperty(Phaser.BitmapText.prototype, 'font', {
         if (value !== this._font)
         {
             this._font = value.trim();
+            this._data = this.game.cache.getBitmapFont(this._font);
             this.updateText();
         }
 
@@ -571,7 +623,7 @@ Object.defineProperty(Phaser.BitmapText.prototype, 'text', {
 
         if (value !== this._text)
         {
-            this._text = value.toString() || '';
+            this._text = this.cleanText(value.toString()) || '';
             this.updateText();
         }
 
@@ -606,6 +658,39 @@ Object.defineProperty(Phaser.BitmapText.prototype, 'maxWidth', {
         {
             this._maxWidth = value;
             this.updateText();
+        }
+
+    }
+
+});
+
+/**
+* Enable or disable texture smoothing for this BitmapText.
+*
+* The smoothing is applied to the BaseTexture of this font, which all letters of the text reference.
+* 
+* Smoothing is enabled by default.
+* 
+* @name Phaser.BitmapText#smoothed
+* @property {boolean} smoothed
+*/
+Object.defineProperty(Phaser.BitmapText.prototype, 'smoothed', {
+
+    get: function() {
+
+        return !this._data.base.scaleMode;
+
+    },
+
+    set: function(value) {
+
+        if (value)
+        {
+            this._data.base.scaleMode = 0;
+        }
+        else
+        {
+            this._data.base.scaleMode = 1;
         }
 
     }

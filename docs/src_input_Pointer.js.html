@@ -39,6 +39,10 @@
 						</li>
 						
 						<li class="class-depth-0">
+							<a href="Phaser.KeyCode.html">KeyCode</a>
+						</li>
+						
+						<li class="class-depth-0">
 							<a href="PIXI.html">PIXI</a>
 						</li>
 						
@@ -401,7 +405,7 @@
 						</li>
 						
 						<li class="class-depth-3">
-							<a href="Phaser.Physics.Arcade.html#TilemapCollision">TilemapCollision</a>
+							<a href="Phaser.Physics.Arcade.TilemapCollision.html">TilemapCollision</a>
 						</li>
 						
 						<li class="class-depth-2">
@@ -502,6 +506,10 @@
 						
 						<li class="class-depth-1">
 							<a href="Phaser.Pointer.html">Pointer</a>
+						</li>
+						
+						<li class="class-depth-1">
+							<a href="Phaser.PointerMode.html">PointerMode</a>
 						</li>
 						
 						<li class="class-depth-1">
@@ -677,6 +685,10 @@
 						</li>
 						
 						<li class="class-depth-1">
+							<a href="PIXI.CanvasPool.html">CanvasPool</a>
+						</li>
+						
+						<li class="class-depth-1">
 							<a href="PIXI.CanvasRenderer.html">CanvasRenderer</a>
 						</li>
 						
@@ -750,10 +762,6 @@
 						
 						<li class="class-depth-1">
 							<a href="PIXI.SpriteBatch.html">SpriteBatch</a>
-						</li>
-						
-						<li class="class-depth-1">
-							<a href="PIXI.Stage.html">Stage</a>
 						</li>
 						
 						<li class="class-depth-1">
@@ -1103,8 +1111,9 @@
 * @constructor
 * @param {Phaser.Game} game - A reference to the currently running game.
 * @param {number} id - The ID of the Pointer object within the game. Each game can have up to 10 active pointers.
+* @param {Phaser.PointerMode} pointerMode=(CURSOR|CONTACT) - The operational mode of this pointer, eg. CURSOR or TOUCH.
 */
-Phaser.Pointer = function (game, id) {
+Phaser.Pointer = function (game, id, pointerMode) {
 
     /**
     * @property {Phaser.Game} game - A reference to the currently running game.
@@ -1139,6 +1148,11 @@ Phaser.Pointer = function (game, id) {
     * @default
     */
     this.pointerId = null;
+
+    /**
+    * @property {Phaser.PointerMode} pointerMode - The operational mode of this pointer.
+    */
+    this.pointerMode = pointerMode || (Phaser.PointerMode.CURSOR | Phaser.PointerMode.CONTACT);
 
     /**
     * @property {any} target - The target property of the Pointer as set by the DOM event when this Pointer is started.
@@ -1512,6 +1526,94 @@ Phaser.Pointer.prototype = {
     },
 
     /**
+    * Called by updateButtons.
+    * 
+    * @method Phaser.Pointer#processButtonsDown
+    * @private
+    * @param {integer} buttons - The DOM event.buttons property.
+    * @param {MouseEvent} event - The DOM event.
+    */
+    processButtonsDown: function (buttons, event) {
+
+        //  Note: These are bitwise checks, not booleans
+
+        if (Phaser.Pointer.LEFT_BUTTON &amp; buttons)
+        {
+            this.leftButton.start(event);
+        }
+
+        if (Phaser.Pointer.RIGHT_BUTTON &amp; buttons)
+        {
+            this.rightButton.start(event);
+        }
+                
+        if (Phaser.Pointer.MIDDLE_BUTTON &amp; buttons)
+        {
+            this.middleButton.start(event);
+        }
+
+        if (Phaser.Pointer.BACK_BUTTON &amp; buttons)
+        {
+            this.backButton.start(event);
+        }
+
+        if (Phaser.Pointer.FORWARD_BUTTON &amp; buttons)
+        {
+            this.forwardButton.start(event);
+        }
+
+        if (Phaser.Pointer.ERASER_BUTTON &amp; buttons)
+        {
+            this.eraserButton.start(event);
+        }
+
+    },
+
+    /**
+    * Called by updateButtons.
+    * 
+    * @method Phaser.Pointer#processButtonsUp
+    * @private
+    * @param {integer} buttons - The DOM event.buttons property.
+    * @param {MouseEvent} event - The DOM event.
+    */
+    processButtonsUp: function (button, event) {
+
+        //  Note: These are bitwise checks, not booleans
+
+        if (button === Phaser.Mouse.LEFT_BUTTON)
+        {
+            this.leftButton.stop(event);
+        }
+
+        if (button === Phaser.Mouse.RIGHT_BUTTON)
+        {
+            this.rightButton.stop(event);
+        }
+                
+        if (button === Phaser.Mouse.MIDDLE_BUTTON)
+        {
+            this.middleButton.stop(event);
+        }
+
+        if (button === Phaser.Mouse.BACK_BUTTON)
+        {
+            this.backButton.stop(event);
+        }
+
+        if (button === Phaser.Mouse.FORWARD_BUTTON)
+        {
+            this.forwardButton.stop(event);
+        }
+
+        if (button === 5)
+        {
+            this.eraserButton.stop(event);
+        }
+
+    },
+
+    /**
     * Called when the event.buttons property changes from zero.
     * Contains a button bitmask.
     * 
@@ -1523,73 +1625,23 @@ Phaser.Pointer.prototype = {
 
         this.button = event.button;
 
-        //  This is tested back to IE9, but possibly some browsers may report this differently.
-        //  If you find one, please tell us!
-        var buttons = event.buttons;
+        var down = (event.type.toLowerCase().substr(-4) === 'down');
 
-        if (buttons !== undefined)
+        if (event.buttons !== undefined)
         {
-            //  Note: These are bitwise checks, not booleans
-
-            if (Phaser.Pointer.LEFT_BUTTON &amp; buttons)
+            if (down)
             {
-                this.leftButton.start(event);
+                this.processButtonsDown(event.buttons, event);
             }
             else
             {
-                this.leftButton.stop(event);
-            }
-
-            if (Phaser.Pointer.RIGHT_BUTTON &amp; buttons)
-            {
-                this.rightButton.start(event);
-            }
-            else
-            {
-                this.rightButton.stop(event);
-            }
-                    
-            if (Phaser.Pointer.MIDDLE_BUTTON &amp; buttons)
-            {
-                this.middleButton.start(event);
-            }
-            else
-            {
-                this.middleButton.stop(event);
-            }
-
-            if (Phaser.Pointer.BACK_BUTTON &amp; buttons)
-            {
-                this.backButton.start(event);
-            }
-            else
-            {
-                this.backButton.stop(event);
-            }
-
-            if (Phaser.Pointer.FORWARD_BUTTON &amp; buttons)
-            {
-                this.forwardButton.start(event);
-            }
-            else
-            {
-                this.forwardButton.stop(event);
-            }
-
-            if (Phaser.Pointer.ERASER_BUTTON &amp; buttons)
-            {
-                this.eraserButton.start(event);
-            }
-            else
-            {
-                this.eraserButton.stop(event);
+                this.processButtonsUp(event.button, event);
             }
         }
         else
         {
             //  No buttons property (like Safari on OSX when using a trackpad)
-
-            if (event.type === 'mousedown')
+            if (down)
             {
                 this.leftButton.start(event);
             }
@@ -1602,6 +1654,7 @@ Phaser.Pointer.prototype = {
 
         //  On OS X (and other devices with trackpads) you have to press CTRL + the pad
         //  to initiate a right-click event, so we'll check for that here
+
         if (event.ctrlKey &amp;&amp; this.leftButton.isDown)
         {
             this.rightButton.start(event);
@@ -1625,6 +1678,8 @@ Phaser.Pointer.prototype = {
     */
     start: function (event) {
 
+        var input = this.game.input;
+
         if (event['pointerId'])
         {
             this.pointerId = event.pointerId;
@@ -1643,10 +1698,11 @@ Phaser.Pointer.prototype = {
             this.isUp = false;
         }
 
-        this._history = [];
         this.active = true;
         this.withinGame = true;
         this.dirty = false;
+
+        this._history = [];
         this._clickTrampolines = null;
         this._trampolineTargetObject = null;
 
@@ -1661,18 +1717,19 @@ Phaser.Pointer.prototype = {
         // x and y are the old values here?
         this.positionDown.setTo(this.x, this.y);
 
-        if (this.game.input.multiInputOverride === Phaser.Input.MOUSE_OVERRIDES_TOUCH ||
-            this.game.input.multiInputOverride === Phaser.Input.MOUSE_TOUCH_COMBINE ||
-            (this.game.input.multiInputOverride === Phaser.Input.TOUCH_OVERRIDES_MOUSE &amp;&amp; this.game.input.totalActivePointers === 0))
+        if (input.multiInputOverride === Phaser.Input.MOUSE_OVERRIDES_TOUCH ||
+            input.multiInputOverride === Phaser.Input.MOUSE_TOUCH_COMBINE ||
+            (input.multiInputOverride === Phaser.Input.TOUCH_OVERRIDES_MOUSE &amp;&amp; input.totalActivePointers === 0))
         {
-            this.game.input.x = this.x;
-            this.game.input.y = this.y;
-            this.game.input.position.setTo(this.x, this.y);
-            this.game.input.onDown.dispatch(this, event);
-            this.game.input.resetSpeed(this.x, this.y);
+            input.x = this.x;
+            input.y = this.y;
+            input.position.setTo(this.x, this.y);
+            input.onDown.dispatch(this, event);
+            input.resetSpeed(this.x, this.y);
         }
 
         this._stateReset = false;
+
         this.totalTouches++;
 
         if (this.targetObject !== null)
@@ -1690,12 +1747,14 @@ Phaser.Pointer.prototype = {
     */
     update: function () {
 
+        var input = this.game.input;
+
         if (this.active)
         {
             //  Force a check?
             if (this.dirty)
             {
-                if (this.game.input.interactiveItems.total > 0)
+                if (input.interactiveItems.total > 0)
                 {
                     this.processInteractiveObjects(false);
                 }
@@ -1703,29 +1762,29 @@ Phaser.Pointer.prototype = {
                 this.dirty = false;
             }
 
-            if (this._holdSent === false &amp;&amp; this.duration >= this.game.input.holdRate)
+            if (this._holdSent === false &amp;&amp; this.duration >= input.holdRate)
             {
-                if (this.game.input.multiInputOverride === Phaser.Input.MOUSE_OVERRIDES_TOUCH ||
-                    this.game.input.multiInputOverride === Phaser.Input.MOUSE_TOUCH_COMBINE ||
-                    (this.game.input.multiInputOverride === Phaser.Input.TOUCH_OVERRIDES_MOUSE &amp;&amp; this.game.input.totalActivePointers === 0))
+                if (input.multiInputOverride === Phaser.Input.MOUSE_OVERRIDES_TOUCH ||
+                    input.multiInputOverride === Phaser.Input.MOUSE_TOUCH_COMBINE ||
+                    (input.multiInputOverride === Phaser.Input.TOUCH_OVERRIDES_MOUSE &amp;&amp; input.totalActivePointers === 0))
                 {
-                    this.game.input.onHold.dispatch(this);
+                    input.onHold.dispatch(this);
                 }
 
                 this._holdSent = true;
             }
 
             //  Update the droppings history
-            if (this.game.input.recordPointerHistory &amp;&amp; this.game.time.time >= this._nextDrop)
+            if (input.recordPointerHistory &amp;&amp; this.game.time.time >= this._nextDrop)
             {
-                this._nextDrop = this.game.time.time + this.game.input.recordRate;
+                this._nextDrop = this.game.time.time + input.recordRate;
 
                 this._history.push({
                     x: this.position.x,
                     y: this.position.y
                 });
 
-                if (this._history.length > this.game.input.recordLimit)
+                if (this._history.length > input.recordLimit)
                 {
                     this._history.shift();
                 }
@@ -1743,7 +1802,9 @@ Phaser.Pointer.prototype = {
     */
     move: function (event, fromClick) {
 
-        if (this.game.input.pollLocked)
+        var input = this.game.input;
+
+        if (input.pollLocked)
         {
             return;
         }
@@ -1755,7 +1816,7 @@ Phaser.Pointer.prototype = {
             this.button = event.button;
         }
 
-        if (fromClick)
+        if (fromClick &amp;&amp; this.isMouse)
         {
             this.updateButtons(event);
         }
@@ -1769,7 +1830,7 @@ Phaser.Pointer.prototype = {
         this.screenX = event.screenX;
         this.screenY = event.screenY;
 
-        if (this.isMouse &amp;&amp; this.game.input.mouse.locked &amp;&amp; !fromClick)
+        if (this.isMouse &amp;&amp; input.mouse.locked &amp;&amp; !fromClick)
         {
             this.rawMovementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
             this.rawMovementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
@@ -1778,23 +1839,23 @@ Phaser.Pointer.prototype = {
             this.movementY += this.rawMovementY;
         }
 
-        this.x = (this.pageX - this.game.scale.offset.x) * this.game.input.scale.x;
-        this.y = (this.pageY - this.game.scale.offset.y) * this.game.input.scale.y;
+        this.x = (this.pageX - this.game.scale.offset.x) * input.scale.x;
+        this.y = (this.pageY - this.game.scale.offset.y) * input.scale.y;
 
         this.position.setTo(this.x, this.y);
         this.circle.x = this.x;
         this.circle.y = this.y;
 
-        if (this.game.input.multiInputOverride === Phaser.Input.MOUSE_OVERRIDES_TOUCH ||
-            this.game.input.multiInputOverride === Phaser.Input.MOUSE_TOUCH_COMBINE ||
-            (this.game.input.multiInputOverride === Phaser.Input.TOUCH_OVERRIDES_MOUSE &amp;&amp; this.game.input.totalActivePointers === 0))
+        if (input.multiInputOverride === Phaser.Input.MOUSE_OVERRIDES_TOUCH ||
+            input.multiInputOverride === Phaser.Input.MOUSE_TOUCH_COMBINE ||
+            (input.multiInputOverride === Phaser.Input.TOUCH_OVERRIDES_MOUSE &amp;&amp; input.totalActivePointers === 0))
         {
-            this.game.input.activePointer = this;
-            this.game.input.x = this.x;
-            this.game.input.y = this.y;
-            this.game.input.position.setTo(this.game.input.x, this.game.input.y);
-            this.game.input.circle.x = this.game.input.x;
-            this.game.input.circle.y = this.game.input.y;
+            input.activePointer = this;
+            input.x = this.x;
+            input.y = this.y;
+            input.position.setTo(input.x, input.y);
+            input.circle.x = input.x;
+            input.circle.y = input.y;
         }
 
         this.withinGame = this.game.scale.bounds.contains(this.pageX, this.pageY);
@@ -1805,11 +1866,11 @@ Phaser.Pointer.prototype = {
             return this;
         }
 
-        var i = this.game.input.moveCallbacks.length;
+        var i = input.moveCallbacks.length;
 
         while (i--)
         {
-            this.game.input.moveCallbacks[i].callback.call(this.game.input.moveCallbacks[i].context, this, this.x, this.y, fromClick);
+            input.moveCallbacks[i].callback.call(input.moveCallbacks[i].context, this, this.x, this.y, fromClick);
         }
 
         //  Easy out if we're dragging something and it still exists
@@ -1820,7 +1881,7 @@ Phaser.Pointer.prototype = {
                 this.targetObject = null;
             }
         }
-        else if (this.game.input.interactiveItems.total > 0)
+        else if (input.interactiveItems.total > 0)
         {
             this.processInteractiveObjects(fromClick);
         }
@@ -1877,7 +1938,7 @@ Phaser.Pointer.prototype = {
 
         var currentNode = this.game.input.interactiveItems.first;
 
-        while(currentNode)
+        while (currentNode)
         {
             if (!currentNode.checked &amp;&amp;
                 currentNode.validForInput(highestInputPriorityID, highestRenderOrderID, true))
@@ -1960,10 +2021,39 @@ Phaser.Pointer.prototype = {
     */
     stop: function (event) {
 
+        var input = this.game.input;
+
         if (this._stateReset &amp;&amp; this.withinGame)
         {
             event.preventDefault();
             return;
+        }
+
+        this.timeUp = this.game.time.time;
+
+        if (input.multiInputOverride === Phaser.Input.MOUSE_OVERRIDES_TOUCH ||
+            input.multiInputOverride === Phaser.Input.MOUSE_TOUCH_COMBINE ||
+            (input.multiInputOverride === Phaser.Input.TOUCH_OVERRIDES_MOUSE &amp;&amp; input.totalActivePointers === 0))
+        {
+            input.onUp.dispatch(this, event);
+
+            //  Was it a tap?
+            if (this.duration >= 0 &amp;&amp; this.duration &lt;= input.tapRate)
+            {
+                //  Was it a double-tap?
+                if (this.timeUp - this.previousTapTime &lt; input.doubleTapRate)
+                {
+                    //  Yes, let's dispatch the signal then with the 2nd parameter set to true
+                    input.onTap.dispatch(this, true);
+                }
+                else
+                {
+                    //  Wasn't a double-tap, so dispatch a single tap signal
+                    input.onTap.dispatch(this, false);
+                }
+
+                this.previousTapTime = this.timeUp;
+            }
         }
 
         if (this.isMouse)
@@ -1976,40 +2066,13 @@ Phaser.Pointer.prototype = {
             this.isUp = true;
         }
 
-        this.timeUp = this.game.time.time;
-
-        if (this.game.input.multiInputOverride === Phaser.Input.MOUSE_OVERRIDES_TOUCH ||
-            this.game.input.multiInputOverride === Phaser.Input.MOUSE_TOUCH_COMBINE ||
-            (this.game.input.multiInputOverride === Phaser.Input.TOUCH_OVERRIDES_MOUSE &amp;&amp; this.game.input.totalActivePointers === 0))
-        {
-            this.game.input.onUp.dispatch(this, event);
-
-            //  Was it a tap?
-            if (this.duration >= 0 &amp;&amp; this.duration &lt;= this.game.input.tapRate)
-            {
-                //  Was it a double-tap?
-                if (this.timeUp - this.previousTapTime &lt; this.game.input.doubleTapRate)
-                {
-                    //  Yes, let's dispatch the signal then with the 2nd parameter set to true
-                    this.game.input.onTap.dispatch(this, true);
-                }
-                else
-                {
-                    //  Wasn't a double-tap, so dispatch a single tap signal
-                    this.game.input.onTap.dispatch(this, false);
-                }
-
-                this.previousTapTime = this.timeUp;
-            }
-        }
-
         //  Mouse is always active
         if (this.id > 0)
         {
             this.active = false;
         }
 
-        this.withinGame = false;
+        this.withinGame = this.game.scale.bounds.contains(event.pageX, event.pageY);
         this.pointerId = null;
         this.identifier = null;
         
@@ -2017,10 +2080,10 @@ Phaser.Pointer.prototype = {
         
         if (this.isMouse === false)
         {
-            this.game.input.currentPointers--;
+            input.currentPointers--;
         }
 
-        this.game.input.interactiveItems.callAll('_releasedHandler', this);
+        input.interactiveItems.callAll('_releasedHandler', this);
 
         if (this._clickTrampolines)
         {
@@ -2239,6 +2302,35 @@ Object.defineProperty(Phaser.Pointer.prototype, "worldY", {
     }
 
 });
+
+/**
+* Enumeration categorizing operational modes of pointers.
+*
+* PointerType values represent valid bitmasks.
+* For example, a value representing both Mouse and Touch devices
+* can be expressed as `PointerMode.CURSOR | PointerMode.CONTACT`.
+*
+* Values may be added for future mode categorizations.
+* @class Phaser.PointerMode
+*/
+Phaser.PointerMode = {
+
+    /**
+    * A 'CURSOR' is a pointer with a *passive cursor* such as a mouse, touchpad, watcom stylus, or even TV-control arrow-pad.
+    *
+    * It has the property that a cursor is passively moved without activating the input.
+    * This currently corresponds with {@link Phaser.Pointer#isMouse} property.
+    * @constant
+    */
+    CURSOR: 1 &lt;&lt; 0,
+
+    /**
+    * A 'CONTACT' pointer has an *active cursor* that only tracks movement when actived; notably this is a touch-style input.
+    * @constant
+    */
+    CONTACT: 1 &lt;&lt; 1
+
+};
 </pre>
         </article>
     </section>
@@ -2259,8 +2351,8 @@ Object.defineProperty(Phaser.Pointer.prototype, "worldY", {
 					<br />
 					
 		<span class="jsdoc-message">
-		Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0-alpha10</a>
-		on Fri Jul 24 2015 13:29:45 GMT+0100 (GMT Daylight Time) using the <a href="https://github.com/terryweiss/docstrap">DocStrap template</a>.
+		Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.2</a>
+		on Thu Oct 15 2015 12:04:56 GMT+0100 (GMT Daylight Time) using the <a href="https://github.com/terryweiss/docstrap">DocStrap template</a>.
 		</span>
 				</footer>
 			</div>

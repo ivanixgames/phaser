@@ -14,6 +14,9 @@ module.exports = function (grunt) {
             docs_dir: 'docs',
             sourcemap: false,
             filename: 'phaser',
+            pixiFilename: 'pixi.js',
+            p2Filename: 'p2.js',
+            creatureFilename: 'creature.js',
             filelist: [],
             banner: require('fs').readFileSync(__dirname + '/tasks/banner.txt', 'utf8')
         }
@@ -40,13 +43,13 @@ module.exports = function (grunt) {
             'components':       { 'description': 'Game Object Components',                      'optional': false, 'stub': false },
             'gameobjects':      { 'description': 'Core Game Objects',                           'optional': false, 'stub': false },
             'bitmapdata':       { 'description': 'BitmapData Game Object',                      'optional': true, 'stub': false },
-            'graphics':         { 'description': 'Graphics Game Object',                        'optional': true, 'stub': false },
+            'graphics':         { 'description': 'Graphics and PIXI Mask Support',              'optional': true, 'stub': false },
             'rendertexture':    { 'description': 'RenderTexture Game Object',                   'optional': true, 'stub': false },
             'text':             { 'description': 'Text Game Object (inc. Web Font Support)',    'optional': true, 'stub': false },
             'bitmaptext':       { 'description': 'BitmapText Game Object',                      'optional': true, 'stub': false },
             'retrofont':        { 'description': 'Retro Fonts Game Object',                     'optional': true, 'stub': false },
             'rope':             { 'description': 'Rope and Strip Game Object',                  'optional': true, 'stub': false },
-            'tilesprite':       { 'description': 'Tile Sprite Game Object',                     'optional': true, 'stub': false },
+            'tilesprite':       { 'description': 'Tile Sprite Game Object',                     'optional': true, 'stub': true },
             'system':           { 'description': 'System Classes',                              'optional': false, 'stub': false },
             'math':             { 'description': 'Math, QuadTree and RND',                      'optional': false, 'stub': false },
             'net':              { 'description': 'Network Class',                               'optional': true, 'stub': true },
@@ -55,8 +58,13 @@ module.exports = function (grunt) {
             'animation':        { 'description': 'Animation and Frame Manager',                 'optional': false, 'stub': false },
             'loader':           { 'description': 'Loader and Cache',                            'optional': false, 'stub': false },
             'sound':            { 'description': 'Sound Support (Web Audio and HTML Audio)',    'optional': true, 'stub': true },
+            'scale':            { 'description': 'Scale and Full Screen Manager',               'optional': true, 'stub': true },
             'debug':            { 'description': 'Debug Class',                                 'optional': true, 'stub': true },
+            'dom':              { 'description': 'DOM Utilities',                               'optional': true, 'stub': true },
             'utils':            { 'description': 'Core Utilities',                              'optional': false, 'stub': false },
+            'create':           { 'description': 'Create Support',                              'optional': true, 'stub': true },
+            'flexgrid':         { 'description': 'Flex Grid and Flex Layer',                    'optional': true, 'stub': false },
+            'color':            { 'description': 'Color Functions',                             'optional': true, 'stub': true },
             'physics':          { 'description': 'Physics Manager',                             'optional': false, 'stub': false },
             'arcade':           { 'description': 'Arcade Physics',                              'optional': true, 'stub': false },
             'ninja':            { 'description': 'Ninja Physics',                               'optional': true, 'stub': false },
@@ -85,9 +93,13 @@ module.exports = function (grunt) {
                 }
             }
 
-            grunt.log.writeln("\nFor example: --exclude p2,tilemap,retrofont");
-            grunt.log.writeln("Optional flags: --filename yourfilename and --sourcemap true");
-            grunt.log.writeln("Note that some modules have dependencies on others.\n");
+            grunt.log.writeln("\nFor example: --exclude p2,tilemaps,retrofont\n");
+            grunt.log.writeln("Optional flags:\n");
+            grunt.log.writeln("--filename yourfilename (builds to your own custom file name)");
+            grunt.log.writeln("--sourcemap true (creates a source map)");
+            grunt.log.writeln("--split true (splits Phaser, PIXI, p2 and Creature into separate files)");
+            grunt.log.writeln("--uglify true (runs Uglify on the output files)");
+            grunt.log.writeln("\nNote that some modules have dependencies on others.\n");
 
             grunt.fail.fatal("No build options were specified.");
         }
@@ -96,7 +108,10 @@ module.exports = function (grunt) {
             //  Defaults
             grunt.config.set('sourcemap', false);
             grunt.config.set('filename', 'phaser');
+            grunt.config.set('split', false);
             grunt.config.set('target_dir', '<%= release_dir %>');
+
+            var split = false;
 
             //  Overrides
             if (grunt.option('filename'))
@@ -107,6 +122,12 @@ module.exports = function (grunt) {
             if (grunt.option('sourcemap'))
             {
                 grunt.config.set('sourcemap', grunt.option('sourcemap'));
+            }
+
+            if (grunt.option('split'))
+            {
+                grunt.config.set('split', grunt.option('split'));
+                split = grunt.option('split');
             }
 
             grunt.log.writeln("Excluding modules:\n");
@@ -151,60 +172,140 @@ module.exports = function (grunt) {
                 }
             }
 
-            //  Ok we know the excludes array is fine, let's get this show started
-
-            grunt.log.writeln("\nPackaging Globals ...\n");
+            /////////////////////////////////////////////////////////////////////////
+            //  Ok we know the excludes array is fine, let's get this show started //
+            /////////////////////////////////////////////////////////////////////////
 
             var filelist = [];
+            var pixiFilelist = [];
 
             //  Clean the working folder
             var tasks = [ 'clean:build' ];
 
-            //  Prepare the globals first, the libs that live outside of Phaser
-
-            //  1) Creature
-
-            if (!excludedKeys['creature'])
+            if (split)
             {
-                grunt.log.writeln("-> Creature");
-                tasks.push('concat:creatureGlobal');
-                filelist.push('<%= modules_dir %>/creature-global.js');
+
+                ////////////////////////////////////////
+                //  Split build (for Browserify, etc) //
+                ////////////////////////////////////////
+
+                grunt.log.writeln("\nSplitting Globals ...\n");
+
+                //  1) Creature
+
+                if (!excludedKeys['creature'])
+                {
+                    grunt.log.writeln("-> Creature");
+                    tasks.push('concat:creatureGlobalSplit');
+
+                    if (grunt.option('uglify'))
+                    {
+                        tasks.push('uglify:creature');
+                    }
+                }
+
+                //  2) P2
+
+                if (!excludedKeys['p2'])
+                {
+                    grunt.log.writeln("-> P2.js");
+                    tasks.push('concat:p2GlobalSplit');
+
+                    if (grunt.option('uglify'))
+                    {
+                        tasks.push('uglify:p2');
+                    }
+                }
+
+                //  3) PIXI
+
+                grunt.log.writeln("-> PIXI");
+                tasks.push('concat:pixiIntro');
+                pixiFilelist.push('<%= modules_dir %>/pixi-intro.js');
+
+                //  Optional Rope
+                if (!excludedKeys['rope'])
+                {
+                    grunt.log.writeln("-> PIXI.Rope");
+                    tasks.push('concat:pixiRope');
+                    pixiFilelist.push('<%= modules_dir %>/pixi-rope.js');
+                }
+
+                //  Optional Tilesprite
+                if (!excludedKeys['tilesprite'])
+                {
+                    grunt.log.writeln("-> PIXI.TileSprite");
+                    tasks.push('concat:pixiTileSprite');
+                    pixiFilelist.push('<%= modules_dir %>/pixi-tilesprite.js');
+                }
+
+                //  PIXI Outro
+                tasks.push('concat:pixiOutro');
+                pixiFilelist.push('<%= modules_dir %>/pixi-outro.js');
+
+                grunt.config.set('pixiFilelist', pixiFilelist);
+
+                tasks.push('concat:pixi');
+
+                if (grunt.option('uglify'))
+                {
+                    tasks.push('uglify:pixi');
+                }
             }
-
-            //  2) P2
-
-            if (!excludedKeys['p2'])
+            else
             {
-                grunt.log.writeln("-> P2.js");
-                tasks.push('concat:p2Global');
-                filelist.push('<%= modules_dir %>/p2-global.js');
+                ///////////////////
+                //  Single build //
+                ///////////////////
+
+                grunt.log.writeln("\nPackaging Globals ...\n");
+
+                //  Prepare the globals first, the libs that live outside of Phaser
+
+                //  1) Creature
+
+                if (!excludedKeys['creature'])
+                {
+                    grunt.log.writeln("-> Creature");
+                    tasks.push('concat:creatureGlobal');
+                    filelist.push('<%= modules_dir %>/creature-global.js');
+                }
+
+                //  2) P2
+
+                if (!excludedKeys['p2'])
+                {
+                    grunt.log.writeln("-> P2.js");
+                    tasks.push('concat:p2Global');
+                    filelist.push('<%= modules_dir %>/p2-global.js');
+                }
+
+                //  3) PIXI
+
+                grunt.log.writeln("-> PIXI");
+                tasks.push('concat:pixiIntro');
+                filelist.push('<%= modules_dir %>/pixi-intro.js');
+
+                //  Optional Rope
+                if (!excludedKeys['rope'])
+                {
+                    grunt.log.writeln("-> PIXI.Rope");
+                    tasks.push('concat:pixiRope');
+                    filelist.push('<%= modules_dir %>/pixi-rope.js');
+                }
+
+                //  Optional Tilesprite
+                if (!excludedKeys['tilesprite'])
+                {
+                    grunt.log.writeln("-> PIXI.TileSprite");
+                    tasks.push('concat:pixiTileSprite');
+                    filelist.push('<%= modules_dir %>/pixi-tilesprite.js');
+                }
+
+                //  PIXI Outro
+                tasks.push('concat:pixiOutro');
+                filelist.push('<%= modules_dir %>/pixi-outro.js');
             }
-
-            //  3) PIXI
-
-            grunt.log.writeln("-> PIXI");
-            tasks.push('concat:pixiIntro');
-            filelist.push('<%= modules_dir %>/pixi-intro.js');
-
-            //  Optional Rope
-            if (!excludedKeys['rope'])
-            {
-                grunt.log.writeln("-> PIXI.Rope");
-                tasks.push('concat:pixiRope');
-                filelist.push('<%= modules_dir %>/pixi-rope.js');
-            }
-
-            //  Optional Tilesprite
-            if (!excludedKeys['tilesprite'])
-            {
-                grunt.log.writeln("-> PIXI.TileSprite");
-                tasks.push('concat:pixiTileSprite');
-                filelist.push('<%= modules_dir %>/pixi-tilesprite.js');
-            }
-
-            //  PIXI Outro
-            tasks.push('concat:pixiOutro');
-            filelist.push('<%= modules_dir %>/pixi-outro.js');
 
             //  And now for Phaser
 
@@ -315,6 +416,19 @@ module.exports = function (grunt) {
         grunt.option('copy', true);
         grunt.option('copycustom', true);
         grunt.option('uglify', true);
+
+        grunt.task.run('custom');
+
+    });
+
+    grunt.registerTask('split', 'Compile Phaser to dist folder and splits the globals into single files', function() {
+
+        grunt.option('exclude', 'ninja,creature');
+        grunt.option('filename', 'phaser');
+        grunt.option('sourcemap', true);
+        grunt.option('copy', false);
+        grunt.option('uglify', true);
+        grunt.option('split', true);
 
         grunt.task.run('custom');
 

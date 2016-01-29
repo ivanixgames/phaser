@@ -352,7 +352,14 @@ Phaser.Video.prototype = {
 
         if (this.videoStream !== null)
         {
-            this.videoStream.stop();
+            if (this.videoStream['active'])
+            {
+                this.videoStream.active = false;
+            }
+            else
+            {
+                this.videoStream.stop();
+            }
         }
 
         this.removeVideoElement();
@@ -731,7 +738,15 @@ Phaser.Video.prototype = {
             else
             {
                 this.video.src = "";
-                this.videoStream.stop();
+
+                if (this.videoStream['active'])
+                {
+                    this.videoStream.active = false;
+                }
+                else
+                {
+                    this.videoStream.stop();
+                }
             }
 
             this.videoStream = null;
@@ -739,7 +754,8 @@ Phaser.Video.prototype = {
         }
         else
         {
-            this.video.removeEventListener('ended', this.complete.bind(this));
+            this.video.removeEventListener('ended', this.complete.bind(this), true);
+            this.video.removeEventListener('playing', this.playHandler.bind(this), true);
 
             if (this.touchLocked)
             {
@@ -1119,7 +1135,7 @@ Phaser.Video.prototype = {
 };
 
 /**
-* @memberof Phaser.Video
+* @name Phaser.Video#currentTime
 * @property {number} currentTime - The current time of the video in seconds. If set the video will attempt to seek to that point in time.
 */
 Object.defineProperty(Phaser.Video.prototype, "currentTime", {
@@ -1139,7 +1155,7 @@ Object.defineProperty(Phaser.Video.prototype, "currentTime", {
 });
 
 /**
-* @memberof Phaser.Video
+* @name Phaser.Video#duration
 * @property {number} duration - The duration of the video in seconds.
 * @readOnly
 */
@@ -1154,7 +1170,7 @@ Object.defineProperty(Phaser.Video.prototype, "duration", {
 });
 
 /**
-* @memberof Phaser.Video
+* @name Phaser.Video#progress
 * @property {number} progress - The progress of this video. This is a value between 0 and 1, where 0 is the start and 1 is the end of the video.
 * @readOnly
 */
